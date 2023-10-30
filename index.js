@@ -31,6 +31,7 @@ const client = new MongoClient(uri, {
 });
 
 const serviceCollection = client.db('carDoctor').collection("Services");
+const orderCollection = client.db('carDoctor').collection("orders");
 
 
 app.get('/services', async(req,res)=>{
@@ -43,8 +44,17 @@ app.get('/services', async(req,res)=>{
 app.get('/services/:id', async(req,res) =>{
     const id = req.params.id;
     const query = { _id: new ObjectId(id)}
-    const result = await serviceCollection.findOne(query);
+    const result = await orderCollection.findOne(query);
     res.send(result)
+})
+
+//bookings
+
+app.post('/orders', async (req,res) =>{
+    const order = req.body;
+    console.log(order);
+    const result = await orderCollection.insertOne(order)
+    res.send(result);
 })
 
 
