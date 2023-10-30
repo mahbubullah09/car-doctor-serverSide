@@ -76,11 +76,31 @@ app.get('/orders/:id', async(req,res) =>{
 
 
 app.delete('/orders/:id', async (req,res) =>{
-    id = req.params.id;
+    const id = req.params.id;
     const query = { _id: new ObjectId(id)}
 
     const result = await orderCollection.deleteOne(query)
     res.send(result);
+})
+
+app.patch('/orders/:id', async (req,res) =>{
+    const id = req.params.id;
+    const filter = {_id: new ObjectId(id)}
+    const updateStatus = req.body;
+    console.log(updateStatus);
+
+    const updateDoc = {
+
+        $set: {
+  
+          status: updateStatus.status
+  
+        },
+    }
+
+    const result = await orderCollection.updateOne(filter,updateDoc);
+    res.send(result)
+
 })
 
 
