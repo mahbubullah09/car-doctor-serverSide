@@ -44,7 +44,7 @@ app.get('/services', async(req,res)=>{
 app.get('/services/:id', async(req,res) =>{
     const id = req.params.id;
     const query = { _id: new ObjectId(id)}
-    const result = await orderCollection.findOne(query);
+    const result = await serviceCollection.findOne(query);
     res.send(result)
 })
 
@@ -67,7 +67,21 @@ app.get('/orders', async (req,res) =>{
     const result = await orderCollection.find().toArray();
     res.send(result);
 })
+app.get('/orders/:id', async(req,res) =>{
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id)}
+    const result = await orderCollection.findOne(query);
+    res.send(result)
+})
 
+
+app.delete('/orders/:id', async (req,res) =>{
+    id = req.params.id;
+    const query = { _id: new ObjectId(id)}
+
+    const result = await orderCollection.deleteOne(query)
+    res.send(result);
+})
 
 
 
