@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const cookieParsar = require('cookie-parser')
+const { MongoClient, ServerApiVersion, ObjectId, ReturnDocument } = require('mongodb');
 require('dotenv').config();
 const app =express();
 const port = process.env.PORT || 5000;
@@ -9,14 +10,49 @@ const port = process.env.PORT || 5000;
 
 //middlewere
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173'],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParsar());
 
 
 
 
 console.log(process.env.NAME);
 console.log(process.env.PASS);
+
+
+
+const logger = async(req,res,next ) =>{
+  console.log("called", req.host , req.originalUrl);
+  next();
+}
+
+const verifyToken = async(req,res, next)=> {
+
+  const token = req.cookies?.token;
+  console.log('value of token', token);
+  if(!token){
+    return res.status(401).send({ message: 'Not Authorizes'})
+
+  }
+
+  jwt.verify(token, process.env.S_Token, (err,decode) =>{
+    //error
+    if(err){
+      console.log(err);
+      return res.status(401).send({ message: 'Not Authorizes'})
+    }
+    //decode
+    console.log('value of token:', decode);
+    req.user= decode;
+    next();
+  })
+  
+
+}
 
 
 
@@ -40,22 +76,28 @@ app.post('/jwt', async(req,res) =>{
   const user = req.body;
   console.log(user);
 
-  const token = jwt.sign(user, 'secret', {expiresIn: '1h'})
-  res.send(token)
+  const token = jwt.sign(user, process.env.S_Token, {expiresIn: '1h'})
+  res
+  .cookie('token', token,{
+    httpOnly: true,
+    secure: false
+  
+  })
+  .send({success: true})
 })
 
 
 
 
 //client api
-app.get('/services', async(req,res)=>{
+app.get('/services', logger, async(req,res)=>{
     const cursor = serviceCollection.find();
     const result = await cursor.toArray();
     res.send(result);
 })
 
 
-app.get('/services/:id', async(req,res) =>{
+app.get('/services/:id', logger, async(req,res) =>{
     const id = req.params.id;
     const query = { _id: new ObjectId(id)}
     const result = await serviceCollection.findOne(query);
@@ -71,13 +113,22 @@ app.post('/orders', async (req,res) =>{
     res.send(result);
 })
 
-app.get('/orders', async (req,res) =>{
+app.get('/orders', verifyToken, logger, async (req,res) =>{
 
     let query= {};
+  
 
     if(req.query?.email){
         query = {email: req.query.email}
     }
+    console.log("token", req.cookies.token);
+    console.log('user in token', req.user);
+    if(req.query.email !== req.user.email){
+      return res.status(403).send({ message: 'Forbidden access'})
+    }
+
+
+
     const result = await orderCollection.find().toArray();
     res.send(result);
 })
